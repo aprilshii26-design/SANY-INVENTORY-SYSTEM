@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#c8102e">
+  <meta name="description" content="SANY Inventory System — Inventory administration and QC documentation">
+  <title>SANY INVENTORY SYSTEM</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-mark" aria-hidden="true">S</div>
+    <div class="brand-divider"></div>
+    <div class="brand-copy">
+      <h1>SANY INVENTORY SYSTEM</h1>
+      <p>INVENTORY ADMINISTRATION &amp; QC DOCUMENTATION</p>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="account-row" aria-label="Informasi akun">
+      <div id="account-label" class="account-label">MODE PENGEMBANGAN</div>
+      <button id="logout-btn" class="button button-outline" type="button" hidden>LOGOUT</button>
+    </section>
+
+    <section id="dashboard-view" class="view">
+      <div class="welcome-block">
+        <p class="eyebrow">INVENTORY WORKSPACE</p>
+        <h2>Selamat Datang</h2>
+        <p class="muted">Sistem administrasi Inventory SANY.</p>
+      </div>
+
+      <div class="menu-list">
+        <button class="menu-card" type="button" data-open="qc-view">
+          <span class="menu-icon" aria-hidden="true">✓</span>
+          <span class="menu-copy">
+            <strong>01. QC Documentation</strong>
+            <small>Input DO, Picking List, dan dokumentasi foto QC.</small>
+          </span>
+          <span class="chevron" aria-hidden="true">›</span>
+        </button>
+        <div class="menu-card menu-card-disabled" aria-disabled="true">
+          <span class="menu-icon" aria-hidden="true">＋</span>
+          <span class="menu-copy">
+            <strong>Menu Berikutnya</strong>
+            <small>Ruang untuk pengembangan fitur Inventory.</small>
+            <em>COMING SOON</em>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section id="qc-view" class="view" hidden>
+      <button class="back-link" type="button" data-open="dashboard-view">‹ Kembali ke Dashboard</button>
+      <div class="welcome-block compact">
+        <p class="eyebrow">INVENTORY / QC</p>
+        <h2>QC Documentation</h2>
+        <p class="muted">Form ini adalah kerangka awal. Penyimpanan belum diaktifkan.</p>
+      </div>
+
+      <form id="qc-form" class="form-card">
+        <label class="field-label" for="do-number">DO Number <span>*</span></label>
+        <input id="do-number" name="doNumber" autocomplete="off" required placeholder="Scan barcode DO menggunakan laser PDA">
+        <p class="field-help">Arahkan fokus ke kolom ini, lalu scan menggunakan laser PDA. Input manual tetap tersedia.</p>
+
+        <label class="field-label" for="picking-list">Picking List Number <span>*</span></label>
+        <input id="picking-list" name="pickingList" autocomplete="off" required placeholder="Scan barcode Picking List">
+        <p class="field-help">Laser scanner harus mengirim hasil scan sebagai input keyboard (HID/keyboard wedge) atau melalui integrasi perangkat yang didukung.</p>
+
+        <div class="section-divider"></div>
+        <label class="field-label" for="picking-photos">Photo Picking List <span>*</span></label>
+        <input id="picking-photos" name="pickingPhotos" type="file" accept="image/*" capture="environment" multiple>
+        <p class="field-help">Maksimal 10 foto. File asli akan dipertahankan.</p>
+
+        <label class="field-label" for="part-photos">Photo Item / Part</label>
+        <input id="part-photos" name="partPhotos" type="file" accept="image/*" capture="environment" multiple>
+        <p class="field-help">Jumlah fleksibel. Upload akan dirancang bertahap agar lebih andal.</p>
+
+        <label class="field-label" for="remarks">Remarks</label>
+        <textarea id="remarks" name="remarks" rows="3" placeholder="Catatan tambahan (opsional)"></textarea>
+
+        <div class="notice">QC ID akan dibuat otomatis oleh backend saat transaksi disimpan. DO duplikat diperbolehkan.</div>
+        <button class="button button-primary" type="submit">SIMPAN QC <span>— BELUM AKTIF</span></button>
+      </form>
+    </section>
+    <footer class="app-footer">SANY INVENTORY SYSTEM <span>•</span> DEVELOPMENT BUILD</footer>
+  </main>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
