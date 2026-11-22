@@ -147,143 +147,129 @@ function isTrustedAppsScriptOrigin(origin) {
 // - Request ID unik
 // ==========================================
 
+
 function callInventoryApi(action, data = {}) {
   return new Promise((resolve, reject) => {
 
-    const requestId = createRequestId();
+    (async function() {
+      let iframe;
+      let form;
+      let timeoutId;
+      let completed = false;
 
-    const frameName = 'inventory-api-' + requestId;
+      function cleanup() {
+        window.removeEventListener('message', handleMessage);
 
-    const iframe = document.createElement('iframe');
+        if (timeoutId) {
+          window.clearTimeout(timeoutId);
+        }
 
-    iframe.name = frameName;
-    iframe.title = 'SANY Inventory API';
-    iframe.style.display = 'none';
-
-    const form = document.createElement('form');
-
-    form.method = 'POST';
-    form.action = INVENTORY_API_URL;
-    form.target = frameName;
-    form.enctype = 'application/x-www-form-urlencoded';
-    form.style.display = 'none';
-
-    const input = document.createElement('input');
-
-    input.type = 'hidden';
-    input.name = 'payload';
-
-    input.value = JSON.stringify({
-      ...data,
-      action: action,
-      requestId: requestId
-    });
-
-    form.appendChild(input);
-
-    let timeoutId = null;
-    let completed = false;
-
-    function cleanup() {
-      window.removeEventListener(
-        'message',
-        handleMessage
-      );
-
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
+        if (form) form.remove();
+        if (iframe) iframe.remove();
       }
 
-      form.remove();
-      iframe.remove();
-    }
+      function finish(callback, value) {
+        if (completed) return;
 
-    function finish(callback, value) {
-      if (completed) return;
+        completed = true;
+        cleanup();
+        callback(value);
+      }
 
-      completed = true;
+      function handleMessage(event) {
+        let response = event.data;
 
-      cleanup();
+        if (typeof response === 'string') {
+          try {
+            response = JSON.parse(response);
+          } catch (error) {
+            return;
+          }
+        }
 
-      callback(value);
-    }
+        if (!response || typeof response !== 'object') return;
+        if (response.requestId !== requestId) return;
 
-    function handleMessage(event) {
-
-      let response = event.data;
-
-      // Terima object atau JSON string.
-      if (typeof response === 'string') {
-        try {
-          response = JSON.parse(response);
-        } catch (error) {
+        if (!isTrustedAppsScriptOrigin(event.origin)) {
+          console.warn('API origin tidak dikenal:', event.origin);
           return;
+        }
+
+        if (response.success === true) {
+          finish(resolve, response);
+        } else {
+          finish(
+            reject,
+            new Error(response.message || 'Permintaan API gagal.')
+          );
         }
       }
 
-      if (
-        !response ||
-        typeof response !== 'object'
-      ) {
-        return;
+      try {
+        if (
+          typeof firebase === 'undefined' ||
+          !firebase.auth ||
+          !firebase.auth().currentUser
+        ) {
+          throw new Error('Silakan login kembali.');
+        }
+
+        // Ambil token akun yang sedang login.
+        const idToken = data.idToken ||
+          await firebase.auth().currentUser.getIdToken();
+
+        if (!idToken) {
+          throw new Error('Firebase ID Token tidak tersedia.');
+        }
+
+        const requestId = createRequestId();
+        const frameName = 'inventory-api-' + requestId;
+
+        iframe = document.createElement('iframe');
+        iframe.name = frameName;
+        iframe.title = 'SANY Inventory API';
+        iframe.style.display = 'none';
+
+        form = document.createElement('form');
+        form.method = 'POST';
+        form.action = INVENTORY_API_URL;
+        form.target = frameName;
+        form.enctype = 'application/x-www-form-urlencoded';
+        form.style.display = 'none';
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'payload';
+
+        input.value = JSON.stringify({
+          ...data,
+          idToken: idToken,
+          action: action,
+          requestId: requestId
+        });
+
+        form.appendChild(input);
+
+        window.addEventListener('message', handleMessage);
+
+        document.body.append(iframe, form);
+
+        timeoutId = window.setTimeout(() => {
+          finish(
+            reject,
+            new Error(
+              'Waktu tunggu API habis. Periksa koneksi dan deployment Apps Script.'
+            )
+          );
+        }, 60000);
+
+        form.submit();
+
+      } catch (error) {
+        finish(reject, error);
       }
+    })();
 
-      // Pastikan respons adalah milik request ini.
-      if (response.requestId !== requestId) {
-        return;
-      }
-
-      // Pastikan pesan berasal dari domain Google.
-      if (!isTrustedAppsScriptOrigin(event.origin)) {
-        console.warn(
-          'Ignored API message from untrusted origin:',
-          event.origin
-        );
-
-        return;
-      }
-
-      if (response.success === true) {
-        finish(resolve, response);
-
-      } else {
-        finish(
-          reject,
-          new Error(
-            response.message ||
-            'Permintaan API gagal.'
-          )
-        );
-      }
-    }
-
-    // Listener dipasang sebelum form dikirim.
-    window.addEventListener(
-      'message',
-      handleMessage
-    );
-
-    document.body.append(iframe, form);
-
-    // Timeout 60 detik.
-    timeoutId = window.setTimeout(() => {
-
-      finish(
-        reject,
-        new Error(
-          'Waktu tunggu API habis. ' +
-          'Periksa koneksi dan deployment Apps Script.'
-        )
-      );
-
-    }, 60000);
-
-    try {
-      form.submit();
-
-    } catch (error) {
-      finish(reject, error);
-    }
   });
 }
 
