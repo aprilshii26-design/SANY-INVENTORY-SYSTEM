@@ -393,8 +393,8 @@ async function authorizeFirebaseUser(firebaseUser) {
 // 8. GOOGLE SIGN-IN
 // ==========================================
 
-async function handleGoogleLogin() {
 
+async function handleGoogleLogin() {
   if (
     typeof firebase === 'undefined' ||
     !firebase.auth
@@ -403,88 +403,44 @@ async function handleGoogleLogin() {
       'Firebase SDK belum berhasil dimuat.',
       true
     );
-
     return;
   }
 
   setLoginBusy(true);
-
-  setLoginMessage(
-    'Membuka login Google...'
-  );
+  setLoginMessage('Membuka login Google...');
 
   const auth = firebase.auth();
-
-  const provider =
-    new firebase.auth.GoogleAuthProvider();
+  const provider = new firebase.auth.GoogleAuthProvider();
 
   provider.setCustomParameters({
     prompt: 'select_account'
   });
 
   try {
-
     await auth.setPersistence(
       firebase.auth.Auth.Persistence.LOCAL
     );
 
-    const isMobile =
-      /Android|iPhone|iPad|iPod/i.test(
-        navigator.userAgent
-      );
-
-    if (isMobile) {
-
-      await auth.signInWithRedirect(provider);
-
-    } else {
-
-      await auth.signInWithPopup(provider);
-    }
+    // Gunakan Popup untuk laptop dan HP.
+    await auth.signInWithPopup(provider);
 
   } catch (error) {
+    console.error('Google sign-in error:', error);
 
-    console.error(
-      'Google sign-in error:',
-      error
-    );
+    let message = error.message || 'Login Google gagal.';
 
-    if (error.code === 'auth/popup-blocked') {
-
-      setLoginMessage(
-        'Popup diblokir. Mencoba metode redirect...'
-      );
-
-      try {
-
-        await auth.signInWithRedirect(provider);
-
-        return;
-
-      } catch (redirectError) {
-
-        console.error(
-          'Redirect sign-in error:',
-          redirectError
-        );
-
-        setLoginMessage(
-          redirectError.message ||
-          'Login Google gagal.',
-          true
-        );
-      }
-
-    } else {
-
-      setLoginMessage(
-        error.message || 'Login Google gagal.',
-        true
-      );
+    if (
+      error.code === 'auth/popup-blocked' ||
+      error.code === 'auth/popup-closed-by-user'
+    ) {
+      message =
+        'Jendela login Google tertutup atau diblokir. ' +
+        'Izinkan popup untuk website Inventory lalu coba lagi.';
     }
 
-  } finally {
+    setLoginMessage(message, true);
 
+  } finally {
     setLoginBusy(false);
   }
 }
